@@ -1,0 +1,16 @@
+version: '3.9'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: animotion-mongo-db
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: animotion-db
+
+volumes:
+  mongo-data:
