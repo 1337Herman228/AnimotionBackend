@@ -14,4 +14,5 @@ public class Project {
     private String name;
     private String ownerId;
     private List<String> memberIds;
+    private List<String> columnOrder;
 }

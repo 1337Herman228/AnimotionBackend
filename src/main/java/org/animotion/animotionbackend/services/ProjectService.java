@@ -30,6 +30,7 @@ public class ProjectService {
     private final ColumnRepository columnRepository;
     private final CardRepository cardRepository;
     private final UserService userService;
+    private final ProjectSecurityService projectSecurityService;
 
     /**
      * Gets a list of project summaries for the currently authenticated user.
@@ -85,8 +86,16 @@ public class ProjectService {
         // Map members to UserDto
         List<UserDto> memberDtos = members.stream().map(this::mapToUserDto).collect(Collectors.toList());
 
+        Map<String, Column> columnMap = columns.stream()
+                .collect(Collectors.toMap(Column::getId, Function.identity()));
+
+        List<Column> sortedColumns = project.getColumnOrder().stream()
+                .map(columnMap::get)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+
         // Map columns to ColumnDto, embedding the cards within them
-        List<ColumnDto> columnDtos = columns.stream()
+        List<ColumnDto> columnDtos = sortedColumns.stream()
                 .map(column -> {
                     List<CardDto> cardsInColumn = column.getCardOrder().stream()
                             .map(cardMap::get) // Get card object from map by ID
@@ -110,7 +119,20 @@ public class ProjectService {
                 .ownerId(project.getOwnerId())
                 .members(memberDtos)
                 .columns(columnDtos)
+                .columnOrder(project.getColumnOrder())
                 .build();
+    }
+
+    @Transactional
+    public void updateColumnOrder(String projectId, UpdateColumnOrderRequest request) {
+        // Используем ваш сервис безопасности для проверки прав
+        projectSecurityService.checkAccess(projectId);
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+
+        project.setColumnOrder(request.getColumnOrder());
+        projectRepository.save(project);
     }
 
     private UserDto mapToUserDto(User user) {
@@ -138,6 +160,7 @@ public class ProjectService {
     /**
      * Creates a new project for the currently authenticated user.
      * Also initializes the project with default columns.
+     *
      * @param request The request containing the project's name.
      * @return A summary DTO of the newly created project.
      */

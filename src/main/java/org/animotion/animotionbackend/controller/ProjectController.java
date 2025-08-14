@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.animotion.animotionbackend.dto.CreateProjectRequest;
 import org.animotion.animotionbackend.dto.FullProjectDto;
 import org.animotion.animotionbackend.dto.ProjectSummaryDto;
+import org.animotion.animotionbackend.dto.UpdateColumnOrderRequest;
 import org.animotion.animotionbackend.services.ProjectService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,14 @@ public class ProjectController {
     public ResponseEntity<ProjectSummaryDto> createProject(@RequestBody CreateProjectRequest request) {
         ProjectSummaryDto newProject = projectService.createProject(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(newProject);
+    }
+
+    @PatchMapping("/{projectId}/column-order")
+    public ResponseEntity<Void> updateColumnOrder(
+            @PathVariable String projectId,
+            @RequestBody UpdateColumnOrderRequest request) {
+        projectService.updateColumnOrder(projectId, request);
+        return ResponseEntity.ok().build();
     }
 
 }

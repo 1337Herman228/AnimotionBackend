@@ -26,6 +26,7 @@ public class ProjectSeederService {
 
     /**
      * Creates a test project with columns and cards for the given users.
+     *
      * @param users The list of users to be involved in the project.
      */
     public void seedProjectData(List<User> users) {
@@ -57,8 +58,10 @@ public class ProjectSeederService {
         updateCardOrderInColumn(colTodo, savedCards);
         updateCardOrderInColumn(colInProgress, savedCards);
         updateCardOrderInColumn(colDone, savedCards);
-
         columnRepository.saveAll(Arrays.asList(colTodo, colInProgress, colDone));
+
+        mainProject.setColumnOrder(List.of(colTodo.getId(), colInProgress.getId(), colDone.getId()));
+        projectRepository.save(mainProject);
     }
 
     // --- Helper Methods ---

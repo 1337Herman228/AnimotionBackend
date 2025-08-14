@@ -3,6 +3,7 @@ package org.animotion.animotionbackend.dto;
 
 import lombok.Builder;
 import lombok.Data;
+
 import java.util.List;
 
 @Data
@@ -13,4 +14,5 @@ public class FullProjectDto {
     private String ownerId;
     private List<UserDto> members;
     private List<ColumnDto> columns;
+    private List<String> columnOrder;
 }
