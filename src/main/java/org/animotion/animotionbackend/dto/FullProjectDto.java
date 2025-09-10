@@ -3,6 +3,7 @@ package org.animotion.animotionbackend.dto;
 
 import lombok.Builder;
 import lombok.Data;
+import org.animotion.animotionbackend.entity.TaskPriority;
 
 import java.util.List;
 
@@ -15,4 +16,5 @@ public class FullProjectDto {
     private List<UserDto> members;
     private List<ColumnDto> columns;
     private List<String> columnOrder;
+    private List<TaskPriority> priorities;
 }

@@ -1,14 +1,18 @@
 package org.animotion.animotionbackend.entity;
 
 
+import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
+@Builder
 @Document(collection = "cards")
 public class Card {
     @Id
@@ -17,7 +21,8 @@ public class Card {
     private String description;
     private String columnId;
     private String projectId;
-    private String assigneeId;
+    private List<String> appointedMembersId;
+    private TaskPriority priority;
 
     @CreatedDate // Spring Data will automatically set created date
     private LocalDateTime createdAt;

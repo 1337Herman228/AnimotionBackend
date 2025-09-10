@@ -6,11 +6,14 @@ import org.animotion.animotionbackend.dto.CreateProjectRequest;
 import org.animotion.animotionbackend.dto.FullProjectDto;
 import org.animotion.animotionbackend.dto.ProjectSummaryDto;
 import org.animotion.animotionbackend.dto.UpdateColumnOrderRequest;
+import org.animotion.animotionbackend.entity.User;
+import org.animotion.animotionbackend.services.ProjectSecurityService;
 import org.animotion.animotionbackend.services.ProjectService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -19,6 +22,7 @@ import java.util.List;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final ProjectSecurityService projectSecurityService;
 
     @GetMapping
     public ResponseEntity<List<ProjectSummaryDto>> getUserProjects() {
@@ -26,8 +30,9 @@ public class ProjectController {
     }
 
     @GetMapping("/{projectId}")
-    public ResponseEntity<FullProjectDto> getProjectById(@PathVariable String projectId) {
-        return ResponseEntity.ok(projectService.getFullProjectById(projectId));
+    public ResponseEntity<FullProjectDto> getProjectById(@PathVariable String projectId, Principal principal) {
+        User currentUser = projectSecurityService.getCurrentUser(principal);
+        return ResponseEntity.ok(projectService.getFullProjectById(projectId, currentUser));
     }
 
     @PostMapping
