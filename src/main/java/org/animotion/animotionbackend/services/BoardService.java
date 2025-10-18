@@ -134,11 +134,9 @@ public class BoardService {
         projectSecurityService.checkWebsocketAccess(message.getProjectId(), principal);
 
         // --- 2. БИЗНЕС-ЛОГИКА ---
-
-        // Изменяем саму пермещаемую карточку (columnID)
-        Card card = cardRepository.findById(message.getCard().getId())
+        Card card = cardRepository.findById(message.getCardId())
                 .orElseThrow(() -> new IllegalArgumentException("Card not found"));
-        card.setColumnId(message.getCard().getColumnId());
+        card.setColumnId(message.getDestinationColumn().getId());
         cardRepository.save(card);
 
         // Изменяем cardOrder в колонках, между которыми переместили карточку

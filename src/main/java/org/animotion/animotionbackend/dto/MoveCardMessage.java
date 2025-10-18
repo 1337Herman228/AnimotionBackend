@@ -11,5 +11,5 @@ public class MoveCardMessage {
     private String projectId;
     private ReducedColumnDto sourceColumn;
     private ReducedColumnDto destinationColumn;
-    private Card card;
+    private String cardId;
 }
