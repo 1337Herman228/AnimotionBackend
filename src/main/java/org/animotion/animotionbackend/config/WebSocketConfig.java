@@ -38,6 +38,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // Включаем простой брокер сообщений, который будет рассылать сообщения
         // клиентам, подписанным на темы, начинающиеся с /topic.
         // Например, /topic/project/123
-        registry.enableSimpleBroker("/topic");
+        registry.enableSimpleBroker("/topic/", "/queue/");
+
+
+        // --- ДОБАВЬТЕ ЭТУ СТРОКУ ---
+        // Указывает префикс для сообщений, адресованных конкретному пользователю.
+        // Spring автоматически преобразует /user/queue/replies в уникальный
+        // адрес для сессии пользователя, например /queue/replies-user123xyz
+        registry.setUserDestinationPrefix("/user");
     }
 }
