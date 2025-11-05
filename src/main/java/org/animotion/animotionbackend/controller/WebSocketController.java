@@ -2,14 +2,13 @@ package org.animotion.animotionbackend.controller;
 
 
 import lombok.RequiredArgsConstructor;
-import org.animotion.animotionbackend.config.WebSocketReply;
 import org.animotion.animotionbackend.dto.*;
 import org.animotion.animotionbackend.entity.TaskPriority;
 import org.animotion.animotionbackend.services.BoardService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
+
 import java.security.Principal;
 
 
@@ -21,15 +20,8 @@ public class WebSocketController {
 
     // "/app/board/move-card"
     @MessageMapping("/board/move-card")
-    @SendToUser("/queue/replies")
-    public WebSocketReply handleMoveCard(@Payload MoveCardMessage message, Principal principal) {
-        try {
-            boardService.moveCardAndBroadcast(message, principal);
-            return WebSocketReply.success(message.getCorrelationId(), "Card moved successfully");
-
-        } catch (Exception e) {
-            return WebSocketReply.error(message.getCorrelationId(), e.getMessage());
-        }
+    public void handleMoveCard(@Payload MoveCardMessage message, Principal principal) {
+        boardService.moveCardAndBroadcast(message, principal);
     }
 
     @MessageMapping("/board/move-column")

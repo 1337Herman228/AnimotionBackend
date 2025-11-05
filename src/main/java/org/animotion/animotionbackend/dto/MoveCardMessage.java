@@ -1,8 +1,6 @@
 package org.animotion.animotionbackend.dto;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.animotion.animotionbackend.entity.Card;
 
 import java.util.List;
 
@@ -13,4 +11,5 @@ public class MoveCardMessage {
     private ReducedColumnDto sourceColumn;
     private ReducedColumnDto destinationColumn;
     private String cardId;
+    private List<String> queryKey;
 }

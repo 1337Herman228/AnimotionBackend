@@ -143,7 +143,7 @@ public class BoardService {
         Column sourceColumn = columnRepository.findById(message.getSourceColumn().getId()).orElseThrow(() -> new IllegalArgumentException("Column not found"));
         Column destinationColumn = columnRepository.findById(message.getDestinationColumn().getId()).orElseThrow(() -> new IllegalArgumentException("Column not found"));
         sourceColumn.setCardOrder(message.getSourceColumn().getCardOrder());
-        destinationColumn.setCardOrder(message.getDestinationColumn().cardOrder);
+        destinationColumn.setCardOrder(message.getDestinationColumn().getCardOrder());
         columnRepository.save(sourceColumn);
         columnRepository.save(destinationColumn);
 
