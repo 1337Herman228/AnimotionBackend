@@ -38,6 +38,7 @@ public class SecurityConfig {
                         // Allow unauthenticated access to auth endpoints
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
                         // Require authentication for any other request
                         .anyRequest().authenticated()
                 )

@@ -1,13 +1,16 @@
 package org.animotion.animotionbackend.exception;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@AllArgsConstructor
 public class ErrorResponse {
-    private int statusCode;
+    private String status = "error";
     private String message;
     private LocalDateTime timestamp;
+
+    public ErrorResponse(String message) {
+        this.message = message;
+        this.timestamp = LocalDateTime.now();
+    }
 }

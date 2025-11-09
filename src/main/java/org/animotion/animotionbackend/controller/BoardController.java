@@ -1,41 +1,94 @@
 package org.animotion.animotionbackend.controller;
 
+
 import lombok.RequiredArgsConstructor;
-import org.animotion.animotionbackend.dto.CardDto;
-import org.animotion.animotionbackend.dto.CreateCardRequest;
-import org.animotion.animotionbackend.dto.MoveCardRequest;
-import org.animotion.animotionbackend.dto.UpdateCardRequest;
+import org.animotion.animotionbackend.dto.*;
+import org.animotion.animotionbackend.entity.User;
 import org.animotion.animotionbackend.services.BoardService;
+import org.animotion.animotionbackend.services.ProjectSecurityService;
+import org.animotion.animotionbackend.services.ProjectService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
+import java.util.List;
+import java.util.Map;
+
 @RestController
-@RequestMapping("/api/board")
+@RequestMapping("/api/boards")
 @RequiredArgsConstructor
 public class BoardController {
 
+    private final ProjectService projectService;
+    private final ProjectSecurityService projectSecurityService;
     private final BoardService boardService;
 
-    @PostMapping("/cards")
-    public ResponseEntity<CardDto> createCard(@RequestBody CreateCardRequest request) {
-        return ResponseEntity.ok(boardService.createCard(request));
+    @GetMapping
+    public ResponseEntity<List<ProjectSummaryDto>> getUserProjects() {
+        return ResponseEntity.ok(projectService.getProjectsForCurrentUser());
     }
 
-    @PostMapping("/cards/move")
-    public ResponseEntity<Void> moveCard(@RequestBody MoveCardRequest request) {
-        boardService.moveCard(request);
-        return ResponseEntity.ok().build(); // return 200 OK without body
+    @GetMapping("/{boardId}")
+    public ResponseEntity<FullProjectDto> getProjectById(@PathVariable String boardId, Principal principal) {
+        User currentUser = projectSecurityService.getCurrentUser(principal);
+        return ResponseEntity.ok(projectService.getFullProjectById(boardId, currentUser));
     }
 
-    @PatchMapping("/cards/{cardId}") // PATCH is suitable for partial updates
-    public ResponseEntity<CardDto> updateCard(@PathVariable String cardId, @RequestBody UpdateCardRequest request) {
-        return ResponseEntity.ok(boardService.updateCard(cardId, request));
+    @PostMapping
+    public ResponseEntity<ProjectSummaryDto> createProject(@RequestBody CreateProjectRequest request) {
+        ProjectSummaryDto newProject = projectService.createProject(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(newProject);
     }
 
-    @DeleteMapping("/cards/{cardId}")
-    public ResponseEntity<Void> deleteCard(@PathVariable String cardId) {
-        boardService.deleteCard(cardId);
+    @PatchMapping("/{boardId}/column-order")
+    public ResponseEntity<Void> updateColumnOrder(
+            @PathVariable String boardId,
+            @RequestBody UpdateColumnOrderRequest request) {
+        projectService.updateColumnOrder(boardId, request);
         return ResponseEntity.ok().build();
     }
+
+    @PutMapping("/move-card")
+    public ResponseEntity<Map<String, String>> handleMoveCard(@RequestBody MoveCardMessage message, Principal principal) {
+        boardService.moveCardAndBroadcast(message, principal);
+        return ResponseEntity.ok(Map.of("status", "success", "message", "Card moved successfully."));
+    }
+
+    @PutMapping("/move-column")
+    public ResponseEntity<Map<String, String>> handleMoveColumn(@RequestBody MoveColumnMessage message, Principal principal) {
+        boardService.moveColumnAndBroadcast(message, principal);
+        return ResponseEntity.ok(Map.of("status", "success", "message", "Column moved successfully."));
+    }
+
+    @PostMapping("/add-card")
+    public ResponseEntity<Map<String, String>> addCard(@RequestBody NewCardMessage message, Principal principal) {
+        boardService.addCard(message, principal);
+        return ResponseEntity.ok(Map.of("status", "success", "message", "Card added successfully."));
+    }
+
+    @DeleteMapping("/delete-card/{id}")
+    public ResponseEntity<Map<String, String>> deleteCard(@PathVariable String id, Principal principal) {
+        boardService.deleteCard(id, principal);
+        return ResponseEntity.ok(Map.of("status", "success", "message", "Card deleted successfully."));
+    }
+
+    @PutMapping("/edit-card")
+    public ResponseEntity<Map<String, String>> editCard(@RequestBody CardDto message, Principal principal) {
+        boardService.editCard(message, principal);
+        return ResponseEntity.ok(Map.of("status", "success", "message", "Card edited successfully."));
+    }
+
+//    @MessageMapping("/add-priority")
+//    public void addPriority(@Payload TaskPriority message, Principal principal) {
+//        boardService.addProjectPriority(message, principal);
+//    }
+//
+//    @MessageMapping("/change-priority")
+//    public void changePriority(@Payload ChangeCardPriorityDto message, Principal principal) {
+//        boardService.changeCardPriority(message, principal);
+//    }
+//
+
 
 }

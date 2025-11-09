@@ -3,14 +3,8 @@ package org.animotion.animotionbackend.services;
 
 import lombok.RequiredArgsConstructor;
 import org.animotion.animotionbackend.dto.*;
-import org.animotion.animotionbackend.entity.Card;
-import org.animotion.animotionbackend.entity.Column;
-import org.animotion.animotionbackend.entity.Project;
-import org.animotion.animotionbackend.entity.User;
-import org.animotion.animotionbackend.repository.CardRepository;
-import org.animotion.animotionbackend.repository.ColumnRepository;
-import org.animotion.animotionbackend.repository.ProjectRepository;
-import org.animotion.animotionbackend.repository.UserRepository;
+import org.animotion.animotionbackend.entity.*;
+import org.animotion.animotionbackend.repository.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -30,7 +25,9 @@ public class ProjectService {
     private final ColumnRepository columnRepository;
     private final CardRepository cardRepository;
     private final UserService userService;
+    private final TaskPriorityRepository taskPriorityRepository;
     private final ProjectSecurityService projectSecurityService;
+    private final MapperService mapperService;
 
     /**
      * Gets a list of project summaries for the currently authenticated user.
@@ -48,6 +45,13 @@ public class ProjectService {
                         .id(project.getId())
                         .name(project.getName())
                         .ownerId(project.getOwnerId())
+                        .members(Optional.ofNullable(project.getMemberIds())
+                                .orElseGet(List::of) // если null, то пустой список
+                                .stream()
+                                .map(userId -> mapperService.mapUserToMemberDto(
+                                        userRepository.findById(userId).orElseThrow()
+                                ))
+                                .toList())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -59,8 +63,7 @@ public class ProjectService {
      * @param projectId The ID of the project to retrieve.
      * @return A FullProjectDto containing all project data.
      */
-    public FullProjectDto getFullProjectById(String projectId) {
-        User currentUser = userService.getCurrentUser();
+    public FullProjectDto getFullProjectById(String projectId, User currentUser) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + projectId));
 
@@ -73,18 +76,26 @@ public class ProjectService {
         List<User> members = userRepository.findAllById(project.getMemberIds());
         List<Column> columns = columnRepository.findAllByProjectId(projectId);
         List<Card> cards = cardRepository.findAllByProjectId(projectId);
+        List<TaskPriority> priorities = getProjectAndSharedPriorities(projectId);
+
 
         // Convert data to DTOs and assemble the final response
-        return buildFullProjectDto(project, members, columns, cards);
+        return buildFullProjectDto(project, members, columns, cards, priorities);
     }
 
-    private FullProjectDto buildFullProjectDto(Project project, List<User> members, List<Column> columns, List<Card> cards) {
+    private FullProjectDto buildFullProjectDto(
+            Project project,
+            List<User> members,
+            List<Column> columns,
+            List<Card> cards,
+            List<TaskPriority> priorities
+    ) {
         // Create a map of cards for quick access by ID
         Map<String, Card> cardMap = cards.stream()
                 .collect(Collectors.toMap(Card::getId, Function.identity()));
 
         // Map members to UserDto
-        List<UserDto> memberDtos = members.stream().map(this::mapToUserDto).collect(Collectors.toList());
+        List<UserDto> memberDtos = members.stream().map(mapperService::mapToUserDto).collect(Collectors.toList());
 
         Map<String, Column> columnMap = columns.stream()
                 .collect(Collectors.toMap(Column::getId, Function.identity()));
@@ -100,11 +111,12 @@ public class ProjectService {
                     List<CardDto> cardsInColumn = column.getCardOrder().stream()
                             .map(cardMap::get) // Get card object from map by ID
                             .filter(java.util.Objects::nonNull) // Filter out if a card was deleted but order wasn't updated
-                            .map(this::mapToCardDto) // Map entity to DTO
+                            .map(mapperService::mapToCardDto) // Map entity to DTO
                             .collect(Collectors.toList());
 
                     return ColumnDto.builder()
                             .id(column.getId())
+                            .projectId(column.getProjectId())
                             .title(column.getTitle())
                             .cardOrder(column.getCardOrder())
                             .cards(cardsInColumn)
@@ -120,6 +132,7 @@ public class ProjectService {
                 .members(memberDtos)
                 .columns(columnDtos)
                 .columnOrder(project.getColumnOrder())
+                .priorities(priorities)
                 .build();
     }
 
@@ -135,27 +148,18 @@ public class ProjectService {
         projectRepository.save(project);
     }
 
-    private UserDto mapToUserDto(User user) {
-        return UserDto.builder()
-                .id(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .image(user.getImage())
-                .build();
+
+
+    public List<TaskPriority> getProjectAndSharedPriorities(String projectId) {
+        List<TaskPriority> sharedPriorities = taskPriorityRepository.findByProjectIdNull();
+        List<TaskPriority> projectPriorities = taskPriorityRepository.findByProjectId(projectId);
+        List<TaskPriority> unitedPriorities = new ArrayList<>();
+        unitedPriorities.addAll(sharedPriorities);
+        unitedPriorities.addAll(projectPriorities);
+        return unitedPriorities;
     }
 
-    public CardDto mapToCardDto(Card card) {
-        return CardDto.builder()
-                .id(card.getId())
-                .projectId(card.getProjectId())
-                .columnId(card.getColumnId())
-                .title(card.getTitle())
-                .description(card.getDescription())
-                .assigneeId(card.getAssigneeId())
-                .createdAt(card.getCreatedAt())
-                .updatedAt(card.getUpdatedAt())
-                .build();
-    }
+
 
     /**
      * Creates a new project for the currently authenticated user.
@@ -183,7 +187,7 @@ public class ProjectService {
 
         columnRepository.saveAll(List.of(colTodo, colInProgress, colDone));
 
-        return mapToProjectSummaryDto(savedProject);
+        return mapperService.mapToProjectSummaryDto(savedProject);
     }
 
     // --- Helper method to create a default column ---
@@ -196,11 +200,5 @@ public class ProjectService {
     }
 
     // --- Helper method to map a Project to its summary DTO ---
-    private ProjectSummaryDto mapToProjectSummaryDto(Project project) {
-        return ProjectSummaryDto.builder()
-                .id(project.getId())
-                .name(project.getName())
-                .ownerId(project.getOwnerId())
-                .build();
-    }
+
 }

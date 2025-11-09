@@ -1,14 +1,11 @@
 package org.animotion.animotionbackend.services.seeder;
 
-
-import org.animotion.animotionbackend.entity.Card;
-import org.animotion.animotionbackend.entity.Column;
-import org.animotion.animotionbackend.entity.Project;
-import org.animotion.animotionbackend.entity.User;
+import org.animotion.animotionbackend.entity.*;
 import org.animotion.animotionbackend.repository.CardRepository;
 import org.animotion.animotionbackend.repository.ColumnRepository;
 import org.animotion.animotionbackend.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
+import org.animotion.animotionbackend.repository.TaskPriorityRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -23,6 +20,7 @@ public class ProjectSeederService {
     private final ProjectRepository projectRepository;
     private final ColumnRepository columnRepository;
     private final CardRepository cardRepository;
+    private final TaskPriorityRepository taskPriorityRepository;
 
     /**
      * Creates a test project with columns and cards for the given users.
@@ -32,6 +30,14 @@ public class ProjectSeederService {
     public void seedProjectData(List<User> users) {
         User localUser = users.stream().filter(u -> "user@user.com".equals(u.getEmail())).findFirst().orElseThrow();
         User googleUser = users.stream().filter(u -> "google@user.com".equals(u.getEmail())).findFirst().orElseThrow();
+
+        // 0.1. Create a Priorities
+        TaskPriority priority1 = createTaskPriority("MINOR", "Minor", null, "#5a5d63");
+        TaskPriority priority2 = createTaskPriority("NORMAL", "Normal", null, "#b8e7bc");
+        TaskPriority priority3 = createTaskPriority("MAJOR", "Major", null, "#f5d273");
+        TaskPriority priority4 = createTaskPriority("CRITICAL", "Critical", null, "#ee4ba7");
+
+        taskPriorityRepository.saveAll(Arrays.asList(priority1, priority2, priority3, priority4));
 
         // 1. Create a Project
         Project mainProject = new Project();
@@ -47,10 +53,10 @@ public class ProjectSeederService {
         columnRepository.saveAll(Arrays.asList(colTodo, colInProgress, colDone));
 
         // 3. Create Cards
-        Card card1 = createCard("Configure Spring Security", "Add JWT and basic security config", mainProject.getId(), colTodo.getId(), localUser.getId());
-        Card card2 = createCard("Implement OAuth2 Client", "Connect Google authentication", mainProject.getId(), colTodo.getId(), googleUser.getId());
-        Card card3 = createCard("Build UI in React", "Use Tailwind CSS for styling", mainProject.getId(), colInProgress.getId(), localUser.getId());
-        Card card4 = createCard("Write API documentation", "", mainProject.getId(), colDone.getId(), null);
+        Card card1 = createCard("Configure Spring Security", "Add JWT and basic security config", mainProject.getId(), colTodo.getId(), List.of(localUser.getId()) , priority1);
+        Card card2 = createCard("Implement OAuth2 Client", "Connect Google authentication", mainProject.getId(), colTodo.getId(), List.of(googleUser.getId()) , priority2);
+        Card card3 = createCard("Build UI in React", "Use Tailwind CSS for styling", mainProject.getId(), colInProgress.getId(), List.of(localUser.getId()), priority3);
+        Card card4 = createCard("Write API documentation", "", mainProject.getId(), colDone.getId(), null, priority4);
 
         List<Card> savedCards = cardRepository.saveAll(Arrays.asList(card1, card2, card3, card4));
 
@@ -73,14 +79,24 @@ public class ProjectSeederService {
         return column;
     }
 
-    private Card createCard(String title, String description, String projectId, String columnId, String assigneeId) {
-        Card card = new Card();
+    private Card createCard(String title, String description, String projectId, String columnId, List<String> assigneeId, TaskPriority priority) {
+        Card card = Card.builder().build();
         card.setTitle(title);
         card.setDescription(description);
         card.setProjectId(projectId);
         card.setColumnId(columnId);
-        card.setAssigneeId(assigneeId);
+        card.setAppointedMembersId(assigneeId);
+        card.setPriority(priority);
         return card;
+    }
+
+    private TaskPriority createTaskPriority(String value, String label, String projectId, String color) {
+        TaskPriority priority = new TaskPriority();
+        priority.setValue(value);
+        priority.setLabel(label);
+        priority.setProjectId(projectId);
+        priority.setColor(color);
+        return priority;
     }
 
     private void updateCardOrderInColumn(Column column, List<Card> cards) {

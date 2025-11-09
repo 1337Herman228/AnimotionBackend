@@ -1,16 +1,13 @@
 package org.animotion.animotionbackend.dto;
 
-
 import lombok.Builder;
 import lombok.Data;
 
-import java.util.List;
-
 @Data
 @Builder
-public class ProjectSummaryDto {
+public class MemberDto {
     private String id;
     private String name;
-    private String ownerId;
-    private List<MemberDto> members;
+    private String email;
+    private String image;
 }
