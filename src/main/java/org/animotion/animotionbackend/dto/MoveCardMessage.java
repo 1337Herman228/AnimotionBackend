@@ -7,7 +7,7 @@ import java.util.List;
 @Data
 public class MoveCardMessage {
     private String correlationId;
-    private String projectId;
+    private String boardId;
     private ReducedColumnDto sourceColumn;
     private ReducedColumnDto destinationColumn;
     private String cardId;

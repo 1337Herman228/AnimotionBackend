@@ -12,4 +12,5 @@ public class ColumnDto {
     private String title;
     private List<String> cardOrder;
     private List<CardDto> cards;
+    private String projectId;
 }

@@ -31,23 +31,23 @@ public class BoardService {
     private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
-    public void deleteCard(DeleteCardMessage message, Principal principal) {
-        // --- 1. ПРОВЕРКА БЕЗОПАСНОСТИ ---
-        projectSecurityService.checkWebsocketAccess(message.getProjectId(), principal);
+    public void deleteCard(String cardToDeleteId, Principal principal) {
 
-        // --- 2. БИЗНЕС-ЛОГИКА ---
-        cardRepository.deleteById(message.getDeletedCardId());
+        Card card = cardRepository.findById(cardToDeleteId).orElseThrow();
 
-        Column column = columnRepository.findById(message.getColumnId())
+        projectSecurityService.checkWebsocketAccess(card.getProjectId(), principal);
+
+        Column column = columnRepository.findById(card.getColumnId())
                 .orElseThrow(() -> new IllegalArgumentException("Column not found"));
 
         List<String> updatedOrder = column.getCardOrder().stream()
-                .filter(cardId -> !cardId.equals(message.getDeletedCardId()))
+                .filter(cardId -> !cardId.equals(cardToDeleteId))
                 .toList();
         column.setCardOrder(updatedOrder);
         columnRepository.save(column);
+        cardRepository.delete(card);
 
-        sendProjectUpdates(message.getProjectId(), principal);
+        sendProjectUpdates(card.getProjectId(), principal);
     }
 
     @Transactional
@@ -87,7 +87,7 @@ public class BoardService {
     }
 
     @Transactional
-    public void changeTaskCard(CardDto cardDto, Principal principal) {
+    public void editCard(CardDto cardDto, Principal principal) {
         Card card = cardRepository.findById(cardDto.getId()).get();
         card.setPriority(cardDto.getPriority());
         card.setTitle(cardDto.getTitle());
@@ -97,12 +97,11 @@ public class BoardService {
                 .stream()
                 .map(MemberDto::getId)
                 .toList());
-        sendProjectUpdates(card.getProjectId(), principal);
         card.setProjectId(cardDto.getProjectId());
         card.setColumnId(cardDto.getColumnId());
         cardRepository.save(card);
 
-        sendProjectUpdates(cardDto.getProjectId(), principal);
+        sendProjectUpdates(card.getProjectId(), principal);
     }
 
     @Transactional
@@ -131,7 +130,7 @@ public class BoardService {
     public void moveCardAndBroadcast(MoveCardMessage message, Principal principal) {
 
         // --- 1. ПРОВЕРКА БЕЗОПАСНОСТИ ---
-        projectSecurityService.checkWebsocketAccess(message.getProjectId(), principal);
+        projectSecurityService.checkWebsocketAccess(message.getBoardId(), principal);
 
         // --- 2. БИЗНЕС-ЛОГИКА ---
         Card card = cardRepository.findById(message.getCardId())
@@ -147,7 +146,7 @@ public class BoardService {
         columnRepository.save(sourceColumn);
         columnRepository.save(destinationColumn);
 
-        sendProjectUpdates(message.getProjectId(), principal);
+        sendProjectUpdates(message.getBoardId(), principal);
     }
 
     private void sendProjectUpdates(String projectId, Principal principal) {

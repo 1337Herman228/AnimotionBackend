@@ -116,6 +116,7 @@ public class ProjectService {
 
                     return ColumnDto.builder()
                             .id(column.getId())
+                            .projectId(column.getProjectId())
                             .title(column.getTitle())
                             .cardOrder(column.getCardOrder())
                             .cards(cardsInColumn)
